@@ -1,6 +1,17 @@
 import { curry } from 'ramda';
 import { pipeline } from 'stream/promises';
 import { Readable, Transform, Writable } from 'stream';
+import { mkdir } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import {
+  getArrayDiffs,
+  unstringifyObject,
+  stringifyObject,
+  defaultFormatFn,
+  defaultCompareFn
+} from './defaults.js';
+
 /**
  * This function takes an array of tasks and executes them one at a time by popping them off of the array.
  * This function is used to allow running async tasks maximally parallel.
@@ -39,64 +50,6 @@ export async function parallelLimit(limit, tasks) {
   });
   const flattened = results.map((r) => r.value).flat();
   return flattened;
-}
-
-/**
- * Converts an object into a formatted string. For this function to work properly with unstringifyObject,
- * the object's properties and values should be strings which do not contain private unicode characters '\uE880' or '\uE881'.
- * @param {object} obj An object with strings for values
- * @returns {string} A string with concatenated object properties/values. For example, the object { prop1: val1, prop2: val2} will be mapped to the string 'prop1#val1@prop2#val2'.
- */
-export function stringifyObject(obj) {
-  const sortedEntries = Object.entries(obj).sort(([a], [b]) => {
-    // Need to sort properties by name to get the same string for the same object
-    if (a < b) {
-      return -1;
-    }
-    if (b < a) {
-      return 1;
-    }
-    return 0;
-  });
-  const joinedKeyVal = sortedEntries.map(([key, val]) => `${key}\uE880${val}`);
-  return joinedKeyVal.join('\uE881');
-}
-
-/**
- * Inverse function to `stringifyObject`.
- * @param {string} str A stringified object in the format returned by `stringifyObject`.
- * @returns {object} The object represented by the formatted string `str`.
- */
-export function unstringifyObject(str) {
-  if (str === '') {
-    return {};
-  } // Return an empty object for the empty string so this correctly inverts stringifyObject
-  const splitKeyValPairs = str.split('\uE881');
-  const entries = splitKeyValPairs.map((s) => s.split('\uE880'));
-  return Object.fromEntries(entries);
-}
-
-/**
- * Returns the elements remaining in two array after elements which occur in both arrays are deleted.
- * Repeated elements within each array are ignored.
- * @param {[string[], string[]]} param An tuple of arrays of strings
- * @returns {[string[], string[], number]} Returns an array containing two arrays of strings and a number representing the number of identical elements in the parameters.
- * The first array contains strings which are present in `a` and not present in `b`.
- * The second array contains strings present in `b` but not in `a`.
- */
-export function getArrayDiffs([a, b]) {
-  const setB = new Set(b);
-  const setA = new Set(a);
-  let matches = 0;
-  setA.forEach((el) => {
-    if (setB.has(el)) {
-      setB.delete(el);
-      setA.delete(el);
-      matches++;
-    }
-  });
-
-  return [[...setA], [...setB], matches];
 }
 
 /**
@@ -149,11 +102,33 @@ export function createParallelReadStream(aReaderFn, bReaderFn) {
 }
 
 /**
+ *
+ * @param {*} aReaderFn () -> any : A function taking no arguments which fetches the results from the source data store
+ * @param {*} bReaderFn any -> any : A function which takes the results from aReaderFn and uses these to read results.
+ * @returns
+ */
+export function createSequentialReadStream(aReaderFn, bReaderFn) {
+  return Readable.from(
+    readIteratorFactory(async () => {
+      const aResults = await aReaderFn();
+      const bResults = await bReaderFn(aResults);
+      // If both results are null, break out of the iterator which will close the read stream
+      if (aResults === null && bResults === null) {
+        return null;
+      }
+
+      return [aResults, bResults];
+    }),
+    { objectMode: true }
+  );
+}
+
+/**
  * Need to add some way of keeping track of state across chunks in comparison functions to get total counts
  * @param {} transformFn
  * @returns
  */
-export function createDataTransform(transformFn) {
+export function createDataTransform(transformFn = defaultCompareFn) {
   return new Transform({
     objectMode: true,
     transform(chunk, _, callback) {
@@ -165,18 +140,71 @@ export function createDataTransform(transformFn) {
 }
 
 /**
- * Need to add some way of keeping track of state across chunks in comparison functions to get total counts
- * @param {} transformFn
+ * Create a transform stream that stores the results in a buffer until its read source is closed.
+ * This is useful for set/set comparisons that require that diffs be kept in memory.
+ * @param {Function} transformFn [[*], [*], number] -> [[*], [*], number]
  * @returns
  */
- export function createFormatStream(formatFn) {
+export function createPausedDataTransform(transformFn = defaultCompareFn) {
+  let accumulator = [[], [], 0];
   return new Transform({
     objectMode: true,
     transform(chunk, _, callback) {
-      const transformedData = chunk.map(transformFn);
-      transformedData.forEach(tc => this.push(tc));
-      
+      accumulator[0].push(...chunk[0]);
+      accumulator[1].push(...chunk[1]);
+      accumulator = transformFn(accumulator);
+      callback();
+    },
+    // Only send data once the read stream has finished
+    final(callback) {
+      this.push(accumulator);
+      callback(null, accumulator);
+    }
+  });
+}
+
+/**
+ * Need to add some way of keeping track of state across chunks in comparison functions to get total counts
+ * @param {Function} formatFn * -> string[] A function which takes the output of a comparison stream and maps it to an array of strings
+ * @returns
+ */
+export function createFormatStream(formatFn = defaultFormatFn) {
+  return new Transform({
+    objectMode: true,
+    transform(chunk, _, callback) {
+      const transformedData = formatFn(chunk);
+      // transformedData.forEach((tc) => this.push(tc));
+
       callback(null, Buffer.from(transformedData.join('\n'), 'utf-8'));
     }
   });
 }
+
+export const PARTIAL_DIRECTORY = 'isomorpher';
+/***
+ * 1. Check for previous progress
+ * 2. Find a way to dump current diffs
+ * 3. Create hidden file for saving data
+ * TO DO: figure out how to handle multiple instances running on the same machine...
+ */
+const checkDirExists = async () => {
+  try {
+    const dirName = join('./', PARTIAL_DIRECTORY);
+    await mkdir(dirName);
+  } catch (e) {
+    if (e.code === 'EEXIST') {
+      return;
+    } else {
+      console.error(e);
+      throw new Error(
+        `Could not create temporary directory for saving work; please ensure that you have correct permissions for ${tmpdir()}`
+      );
+    }
+  }
+};
+
+// What is a good API to use here? Can we log the state of the compare functions and of the
+// Actually, we need the streams to hold on to missing/extra and keep making use of them until all the comparisons are completed
+
+// Re-export default utilites for convenience
+export { getArrayDiffs, stringifyObject, unstringifyObject };
