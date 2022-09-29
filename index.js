@@ -1,6 +1,7 @@
 export {
   createDataTransform,
   createParallelReadStream,
+  createPausedDataTransform,
   createFormatStream,
   executeIsoTask,
   getArrayDiffs,

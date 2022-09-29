@@ -1,7 +1,7 @@
 import { curry } from 'ramda';
 import { pipeline } from 'stream/promises';
 import { Readable, Transform, Writable } from 'stream';
-import { mkdir } from 'fs/promises';
+import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -20,7 +20,7 @@ import {
  * @param {Array<Function>} taskQueue An array of async functions taking no parameters
  * @returns {Array<any>} The results returned by running all of the async functions
  */
-const executeTasks = async (taskQueue) => {
+async function executeTasks(taskQueue) {
   const acc = [];
   let nextTask = taskQueue.shift();
   while (typeof nextTask !== 'undefined') {
@@ -29,7 +29,7 @@ const executeTasks = async (taskQueue) => {
     nextTask = taskQueue.shift();
   }
   return acc;
-};
+}
 
 /**
  * Run a fixed number of promises in parallel. Throws an exception if any of the tasks do not fulfill.
@@ -160,7 +160,7 @@ export function createPausedDataTransform(transformFn = defaultCompareFn) {
       this.push(accumulator);
       callback(null, accumulator);
     }
-  });
+  }).on('error', () => saveProgress(accumulator));
 }
 
 /**
@@ -173,24 +173,23 @@ export function createFormatStream(formatFn = defaultFormatFn) {
     objectMode: true,
     transform(chunk, _, callback) {
       const transformedData = formatFn(chunk);
-      // transformedData.forEach((tc) => this.push(tc));
-
       callback(null, Buffer.from(transformedData.join('\n'), 'utf-8'));
     }
   });
 }
 
-export const PARTIAL_DIRECTORY = 'isomorpher';
+export const PARTIAL_DIRECTORY = '.isomorpher';
+export const RESULTS_FILE = 'partial.json';
 /***
  * 1. Check for previous progress
  * 2. Find a way to dump current diffs
  * 3. Create hidden file for saving data
  * TO DO: figure out how to handle multiple instances running on the same machine...
  */
-const checkDirExists = async () => {
+function makeLoggingDir() {
   try {
     const dirName = join('./', PARTIAL_DIRECTORY);
-    await mkdir(dirName);
+    mkdirSync(dirName);
   } catch (e) {
     if (e.code === 'EEXIST') {
       return;
@@ -201,7 +200,15 @@ const checkDirExists = async () => {
       );
     }
   }
-};
+}
+
+function saveProgress(data) {
+  makeLoggingDir();
+  writeFileSync(
+    join('./', PARTIAL_DIRECTORY, RESULTS_FILE),
+    JSON.stringify(data)
+  );
+}
 
 // What is a good API to use here? Can we log the state of the compare functions and of the
 // Actually, we need the streams to hold on to missing/extra and keep making use of them until all the comparisons are completed
