@@ -37,7 +37,7 @@ export function unstringifyObject(str) {
  * Returns the elements remaining in two array after elements which occur in both arrays are deleted.
  * Repeated elements within each array are ignored.
  * @param {[string[], string[]]} param An tuple of arrays of strings
- * @returns {[string[], string[], number]} Returns an array containing two arrays of strings and a number representing the number of identical elements in the parameters.
+ * @returns {[string[], string[], number]} Returns an array that contains two arrays of strings, and a number representing the number of identical elements in the parameters.
  * The first array contains strings which are present in `a` and not present in `b`.
  * The second array contains strings present in `b` but not in `a`.
  */
@@ -56,6 +56,16 @@ export function getArrayDiffs([a, b]) {
   return [[...setA], [...setB], matches];
 }
 
+/**
+ * The default comparison function applied by `createDataTransform` and `createPausedDataTransform` to data chunks.
+ * It expects an array parameter. The first two elements of this array should be arrays of objects and the third element a number.
+ * The first(second) object array represent a chunk of data from the source (destination) datastore.
+ * The number stores the number of matching elements found between source/destination so far.
+ * This allows for storing the differences in cases of mis-aligned result sets from data stores.
+ * The function returns a value in the same format after comparing the chunks.
+ * @param {[object[], object[], number]} An array containing two arrays and a number.  
+ * @returns {[object[], object[], number]}
+ */
 export function defaultCompareFn([a, b, previousMatches]) {
   const stringified = [a.map(stringifyObject), b.map(stringifyObject)];
   const [missing, extra, matches] = getArrayDiffs(stringified);

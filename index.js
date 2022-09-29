@@ -10,3 +10,4 @@ export {
   stringifyObject,
   unstringifyObject
 } from './src/lib/utils.js';
+export { executor } from './src/lib/executor.js';

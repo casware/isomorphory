@@ -55,7 +55,7 @@ export async function parallelLimit(limit, tasks) {
 /**
  * @param {Function[]} fns An array of streams/functions to be executed in a Stream pipeline
  */
-export async function executeIsoTask(...fns) {
+export async function executeIsoTask(fns) {
   await pipeline(...fns, (err) => (err ? console.error(err) : null));
 }
 
@@ -165,15 +165,19 @@ export function createPausedDataTransform(transformFn = defaultCompareFn) {
 
 /**
  * Need to add some way of keeping track of state across chunks in comparison functions to get total counts
- * @param {Function} formatFn * -> string[] A function which takes the output of a comparison stream and maps it to an array of strings
- * @returns
+ * @param {Function} formatFn `* -> string[]` A function which takes the output of a comparison stream and maps it to an array of strings
+ * @returns A Transform stream which applies formatFn to each chunk. The return value of formatFn is then converted to a Buffer, joined by '\n',
+ * and written to the write stream.
  */
-export function createFormatStream(formatFn = defaultFormatFn) {
+export function createFormatStream(
+  formatFn = defaultFormatFn,
+  joinFn = (strArr) => strArr.join('\n')
+) {
   return new Transform({
     objectMode: true,
     transform(chunk, _, callback) {
       const transformedData = formatFn(chunk);
-      callback(null, Buffer.from(transformedData.join('\n'), 'utf-8'));
+      callback(null, Buffer.from(joinFn(transformedData), 'utf-8'));
     }
   });
 }
@@ -202,7 +206,7 @@ function makeLoggingDir() {
   }
 }
 
-function saveProgress(data) {
+export function saveProgress(data) {
   makeLoggingDir();
   writeFileSync(
     join('./', PARTIAL_DIRECTORY, RESULTS_FILE),
