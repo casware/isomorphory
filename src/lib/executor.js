@@ -62,7 +62,7 @@ export function executor(taskDefinition) {
         buildTransform(pauseTransform, transformFn),
         createFormatStream(formatFn, joinFn),
         buildOutputStream(outputPath)
-      ).catch((e) => errorFn(e));
+      ).catch((e) => (errorFn ? errorFn(e) : console.error(e)));
     } catch (e) {
       console.log(e);
     } finally {
