@@ -1,3 +1,5 @@
+import { DefaultCompareResult } from './types';
+
 /**
  * Converts an object into a formatted string. For this function to work properly with unstringifyObject,
  * the object's properties and values should be strings which do not contain private unicode characters '\uE880' or '\uE881'.
@@ -63,10 +65,14 @@ export function getArrayDiffs([a, b]) {
  * The number stores the number of matching elements found between source/destination so far.
  * This allows for storing the differences in cases of mis-aligned result sets from data stores.
  * The function returns a value in the same format after comparing the chunks.
- * @param {[object[], object[], number]} An array containing two arrays and a number.
+ * @param {[object[], object[], number]} tuple A 3-tuple containing two arrays and a number.
  * @returns {[object[], object[], number]}
  */
-export function defaultCompareFn([a, b, previousMatches]) {
+export function defaultCompareFn([
+  a,
+  b,
+  previousMatches
+]: DefaultCompareResult): DefaultCompareResult {
   const stringified = [a.map(stringifyObject), b.map(stringifyObject)];
   const [missing, extra, matches] = getArrayDiffs(stringified);
   return [
@@ -76,7 +82,11 @@ export function defaultCompareFn([a, b, previousMatches]) {
   ];
 }
 
-export function defaultFormatFn([missing, extraneous, matches]) {
+export function defaultFormatFn([missing, extraneous, matches]: [
+  object[],
+  object[],
+  number
+]): string[] {
   return [
     missing.map(
       (missingComp) => JSON.stringify(missingComp).slice(1, -1) + ',"missing"'
