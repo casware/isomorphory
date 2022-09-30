@@ -63,21 +63,27 @@ export function getArrayDiffs([a, b]) {
  * The number stores the number of matching elements found between source/destination so far.
  * This allows for storing the differences in cases of mis-aligned result sets from data stores.
  * The function returns a value in the same format after comparing the chunks.
- * @param {[object[], object[], number]} An array containing two arrays and a number.  
+ * @param {[object[], object[], number]} An array containing two arrays and a number.
  * @returns {[object[], object[], number]}
  */
 export function defaultCompareFn([a, b, previousMatches]) {
   const stringified = [a.map(stringifyObject), b.map(stringifyObject)];
   const [missing, extra, matches] = getArrayDiffs(stringified);
-  return [missing.map(unstringifyObject), extra.map(unstringifyObject), previousMatches + matches];
+  return [
+    missing.map(unstringifyObject),
+    extra.map(unstringifyObject),
+    previousMatches + matches
+  ];
 }
 
 export function defaultFormatFn([missing, extraneous, matches]) {
   return [
     missing.map(
-      (missingComp) => JSON.stringify(missingComp).slice(1, -1) + ',missing'
+      (missingComp) => JSON.stringify(missingComp).slice(1, -1) + ',"missing"'
     ),
-    extraneous.map((extra) => JSON.stringify(extra).slice(1, -1) + ',extra'),
-    `matches: ${matches}`
+    extraneous.map(
+      (extra) => JSON.stringify(extra).slice(1, -1) + ',"extraneous"'
+    ),
+    `"matches": ${matches}`
   ].flat();
 }
