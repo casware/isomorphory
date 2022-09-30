@@ -1,6 +1,6 @@
-import { curry } from 'ramda';
+//import { curry } from 'ramda';
 import { pipeline } from 'stream/promises';
-import { Readable, Transform, Writable } from 'stream';
+import { Readable, Transform } from 'stream';
 import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -59,20 +59,20 @@ export async function executeIsoTask(fns) {
   await pipeline(...fns, (err) => (err ? console.error(err) : null));
 }
 
-/**
- * @param {number} maxRetries
- * @param {Function} fn A function with signature () -> Result
- */
-const withRetry = curry((maxRetries, fn, errorFn, failFn) => {
-  const retrier = (retryCount) => (args) => {
-    const res = retryCount < maxRetries ? fn() : failFn();
-    if (res.error) {
-      return retrier(retryCount + 1)(args);
-    }
-    return res.value;
-  };
-  return retrier(0);
-});
+// /**
+//  * @param {number} maxRetries
+//  * @param {Function} fn A function with signature () -> Result
+//  */
+// const withRetry = curry((maxRetries, fn, errorFn, failFn) => {
+//   const retrier = (retryCount) => (args) => {
+//     const res = retryCount < maxRetries ? fn() : failFn();
+//     if (res.error) {
+//       return retrier(retryCount + 1)(args);
+//     }
+//     return res.value;
+//   };
+//   return retrier(0);
+// });
 
 /**
  *
