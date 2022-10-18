@@ -5,8 +5,8 @@ var { babel } = require('@rollup/plugin-babel');
 //var { uglify } = require('rollup-plugin-uglify');
 var pkg = require('./package.json');
 
-var banner = '//  Isomorpher v' + pkg.version + '\n'
-  + '//  Isomorpher\n'
+var banner = '//  Isomorphory v' + pkg.version + '\n'
+  + '//  Iomorphory\n'
   + '//  (c) 2022-' + new Date().getFullYear() +'\n';
 
 var input = 'src/index.js';
@@ -15,7 +15,7 @@ var config = {
   input: input,
   output: {
     format: 'umd',
-    name: 'isomorpher',
+    name: 'isomorphory',
     exports: 'named',
     banner: banner
   },
