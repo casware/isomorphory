@@ -37,8 +37,5 @@
     "./src/": "./src/",
     "./dist/": "./dist/"
   },
-  "dependencies": {
-    "ramda": "^0.28.0"
-  },
   "types": "index.d.ts"
 }
