@@ -9,8 +9,14 @@ import {
   executeIsoTask
 } from './utils.js';
 import { pipeline } from 'stream/promises';
-
-function buildReader(sequentialRead, readFns) {
+import {
+  CompareResult,
+  CompareFn,
+  ExecutorTaskDefinition,
+  ReadFn,
+  TransformFn
+} from './types';
+function buildReader(sequentialRead: boolean, readFns: [ReadFn, ReadFn]) {
   const [aReader, bReader] = readFns;
   // Consider changing the sequential read creators to take an array of functions instead
 
@@ -18,15 +24,18 @@ function buildReader(sequentialRead, readFns) {
     ? createSequentialReadStream(aReader, bReader)
     : createParallelReadStream(aReader, bReader);
 }
-function buildTransform(pausedTransform, transformFn) {
+function buildTransform(
+  pausedTransform: boolean,
+  compareFn: CompareFn
+) {
   // Consider changing the sequential read creators to take an array of functions instead
 
   return pausedTransform
-    ? createPausedDataTransform(transformFn)
-    : createDataTransform(transformFn);
+    ? createPausedDataTransform(compareFn)
+    : createDataTransform(compareFn);
 }
 
-function buildOutputStream(outputPath) {
+function buildOutputStream(outputPath: string) {
   const pathStr = resolve(outputPath);
   const writeStream = createWriteStream(pathStr, { encoding: 'utf-8' });
   return writeStream;
@@ -37,7 +46,9 @@ function buildOutputStream(outputPath) {
  * @param {Object} task
  * @returns {Function} A function: () => Promise<any> representing an async task to be executed
  */
-export function executor(taskDefinition) {
+export function executor(
+  taskDefinition: ExecutorTaskDefinition
+): () => Promise<void> {
   return async () => {
     const {
       setupFn,
