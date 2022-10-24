@@ -4,22 +4,22 @@
  */
 export type SetupResult = Promise<object>;
 export type DefaultCompareResult = [object[], object[], number]
-export type CompareResult = DefaultCompareResult | object;
+export type CompareResult = DefaultCompareResult;
 export type CompareFn = (tr: CompareResult) => CompareResult;
 
-export type DefaultReadResult = Promise<object[]>;
-export type ReadResult = DefaultReadResult | Promise<any>;
-export type IndependentReadFn = (() => ReadResult )|( (config: SetupResult) => ReadResult )
-export type DependentReadFn = ((r: ReadResult) => ReadResult) | ((config: SetupResult, r: ReadResult) => ReadResult);
+export type DefaultReadPromise = Promise<object[]>;
+export type ReadPromise = DefaultReadPromise | Promise<any>;
+export type IndependentReadFn = (() => ReadPromise );
+export type DependentReadFn = ((r?: ReadPromise) => ReadPromise);
 export type ReadFn = IndependentReadFn | DependentReadFn;
 
-export type TransformFn = (r: [ReadResult, ReadResult]) => [ReadResult, ReadResult];
+export type TransformFn = (r: [Await<DefaultReadPromise>, Await<DefaultReadPromise>]) => [Await<DefaultReadPromise>, Await<ReadDefaultReadPromiseromise>];
 
 export type SetupFn = () => SetupResult;
-export type TeardownFn = ((state: object) => Promise<any>) | (() => Promise<any>);
+export type TeardownFn = ((state?: object) => Promise<any>) | (() => Promise<any>);
 export type FormatFn = (c:CompareResult) => string[];
 export type JoinFn = (strs: string[]) => string;
-export type ErrorFn = ((Error) => undefined )| ((Error, SetupResult) => undefined);
+export type ErrorFn = ((e:Error, s?:SetupResult) => void);
 
 export type ExecutorTaskDefinition = {
   setupFn: SetupFn;
