@@ -1,4 +1,4 @@
-import { DefaultCompareResult } from './types';
+import { CompareResult } from './types';
 
 /**
  * Converts an object into a formatted string. For this function to work properly with unstringifyObject,
@@ -6,7 +6,7 @@ import { DefaultCompareResult } from './types';
  * @param {object} obj An object with strings for values
  * @returns {string} A string with concatenated object properties/values. For example, the object { prop1: val1, prop2: val2} will be mapped to the string 'prop1#val1@prop2#val2'.
  */
-export function stringifyObject(obj) {
+export function stringifyObject(obj: object): string {
   const sortedEntries = Object.entries(obj).sort(([a], [b]) => {
     // Need to sort properties by name to get the same string for the same object
     if (a < b) {
@@ -26,7 +26,7 @@ export function stringifyObject(obj) {
  * @param {string} str A stringified object in the format returned by `stringifyObject`.
  * @returns {object} The object represented by the formatted string `str`.
  */
-export function unstringifyObject(str) {
+export function unstringifyObject(str: string): object {
   if (str === '') {
     return {};
   } // Return an empty object for the empty string so this correctly inverts stringifyObject
@@ -43,7 +43,11 @@ export function unstringifyObject(str) {
  * The first array contains strings which are present in `a` and not present in `b`.
  * The second array contains strings present in `b` but not in `a`.
  */
-export function getArrayDiffs([a, b]) {
+export function getArrayDiffs([a, b]: [string[], string[], number]): [
+  string[],
+  string[],
+  number
+] {
   const setB = new Set(b);
   const setA = new Set(a);
   let matches = 0;
@@ -72,9 +76,9 @@ export function defaultCompareFn([
   a,
   b,
   previousMatches
-]: DefaultCompareResult): DefaultCompareResult {
-  const stringified = [a.map(stringifyObject), b.map(stringifyObject)];
-  const [missing, extra, matches] = getArrayDiffs(stringified);
+]: CompareResult): CompareResult {
+  const stringified = [a.map(stringifyObject), b.map(stringifyObject), previousMatches];
+  const [missing, extra, matches] = getArrayDiffs(stringified as [string[], string[], number]);
   return [
     missing.map(unstringifyObject),
     extra.map(unstringifyObject),
