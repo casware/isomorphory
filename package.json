@@ -11,7 +11,8 @@
     "build:umd:min": "cross-env NODE_ENV=production rollup -c -o dist/index.min.js",
     "build": "npm run build:umd && npm run build:umd:min && n && npm-run-all --parallel build:cjs build:es",
     "clean": "rm -rf dist es source",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "tsc": "tsc"
   },
   "author": "",
   "license": "ISC",
