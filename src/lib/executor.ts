@@ -7,7 +7,7 @@ import {
   createSequentialReadStream,
   createPausedDataTransform,
   executeIsoTask
-} from './utils.js';
+} from './utils';
 import { pipeline } from 'stream/promises';
 import {
   CompareResult,
