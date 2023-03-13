@@ -8,9 +8,18 @@ import {
   unstringifyObject,
   stringifyObject,
   defaultFormatFn,
-  defaultCompareFn,
+  defaultCompareFn
 } from './defaults.js';
-import {FormatFn, JoinFn, ReadFn, CompareFn, IndependentReadFn, TransformFn,  DefaultCompareResult, CompareResult} from './types';
+import {
+  FormatFn,
+  JoinFn,
+  ReadFn,
+  CompareFn,
+  IndependentReadFn,
+  TransformFn,
+  DefaultCompareResult,
+  CompareResult
+} from './types';
 /**
  * This function takes an array of tasks and executes them one at a time by popping them off of the array.
  * This function is used to allow running async tasks maximally parallel.
@@ -37,7 +46,10 @@ async function executeTasks(taskQueue: Task[]): Promise<any[]> {
  * @param {Function} tasks Async functions which take no arguments and return a promise
  * @returns {Promise<any[]>} An array of completed promises.
  */
-export async function parallelLimit(limit: number, tasks: Task[]): Promise<any[]> {
+export async function parallelLimit(
+  limit: number,
+  tasks: Task[]
+): Promise<any[]> {
   const queue = [...tasks];
   const maxExecutors = tasks.length < limit ? tasks.length : limit;
   const results = await Promise.allSettled(
@@ -50,7 +62,7 @@ export async function parallelLimit(limit: number, tasks: Task[]): Promise<any[]
   });
   const flattened = results
     .map((r) => r.status === 'fulfilled' && r.value)
-    .filter(r => !!r)
+    .filter((r) => !!r)
     .flat();
   return flattened;
 }
@@ -59,7 +71,9 @@ export async function parallelLimit(limit: number, tasks: Task[]): Promise<any[]
  * @param {Function[]} fns An array of streams/functions to be executed in a Stream pipeline
  */
 export async function executeIsoTask(fns: Function[]) {
-  await pipeline(...fns, (err: Error) => (err ? console.error(err) : null));
+  await pipeline(
+    ...fns.concat((err: Error) => (err ? console.error(err) : null))
+  );
 }
 
 // /**
@@ -87,7 +101,9 @@ export async function* readIteratorFactory(readerFn: ReadFn) {
     const res = await readerFn();
     if (res !== null) {
       yield res;
-    } else return;
+    } else {
+      return;
+    }
   }
 }
 
@@ -110,7 +126,10 @@ export function createParallelReadStream(aReaderFn: ReadFn, bReaderFn: ReadFn) {
  * @param {ReadFn} bReaderFn A function which takes the results from aReaderFn and uses these to read results.
  * @returns
  */
-export function createSequentialReadStream(aReaderFn: IndependentReadFn, bReaderFn: ReadFn) {
+export function createSequentialReadStream(
+  aReaderFn: IndependentReadFn,
+  bReaderFn: ReadFn
+) {
   return Readable.from(
     readIteratorFactory(async () => {
       const aResults = await aReaderFn();
@@ -131,7 +150,9 @@ export function createSequentialReadStream(aReaderFn: IndependentReadFn, bReader
  * @param {} transformFn
  * @returns {Transform} A transfrom stream
  */
-export function createDataTransform(transformFn: CompareFn | TransformFn = defaultCompareFn): Transform {
+export function createDataTransform(
+  transformFn: CompareFn | TransformFn = defaultCompareFn
+): Transform {
   return new Transform({
     objectMode: true,
     transform(chunk, _, callback) {
@@ -148,12 +169,14 @@ export function createDataTransform(transformFn: CompareFn | TransformFn = defau
  * @param {Function} compareFn [[*], [*], number] -> [[*], [*], number]
  * @returns
  */
-export function createPausedDataTransform(compareFn: CompareFn = defaultCompareFn): Transform {
+export function createPausedDataTransform(
+  compareFn: CompareFn = defaultCompareFn
+): Transform {
   let accumulator: DefaultCompareResult = [[], [], 0];
   return new Transform({
     objectMode: true,
     transform(chunk, _, callback) {
-      const chunkAsResult = (chunk as DefaultCompareResult);
+      const chunkAsResult = chunk as DefaultCompareResult;
       accumulator[0].push(...chunkAsResult[0]);
       accumulator[1].push(...chunkAsResult[1]);
       accumulator = compareFn(accumulator);
@@ -199,7 +222,7 @@ function makeLoggingDir() {
     const dirName = join('./', PARTIAL_DIRECTORY);
     mkdirSync(dirName);
   } catch (e) {
-    if ((e as {code: string}).code === 'EEXIST') {
+    if ((e as { code: string }).code === 'EEXIST') {
       return;
     } else {
       console.error(e);
