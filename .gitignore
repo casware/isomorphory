@@ -1,8 +1,6 @@
 **/node_modules
 # Ignore build directories
 /dist
-/es
-/source
 
 # Ignore type declarations
 **.d.ts

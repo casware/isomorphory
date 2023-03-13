@@ -3,7 +3,6 @@
     "target": "es2020",
     "strict": true,
     "preserveConstEnums": true,
-    "noEmit": true,
     "sourceMap": false,
     "module":"commonjs",
     "moduleResolution":"node",
@@ -11,7 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true, 
     "isolatedModules": true, 
-    "declaration": true
+    "declaration": true,
+    "outDir": "./dist"
   },
   "exclude": ["node_modules", "test/**.ts"]
 }
