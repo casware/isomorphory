@@ -5,17 +5,10 @@ import {
   createFormatStream,
   createParallelReadStream,
   createSequentialReadStream,
-  createPausedDataTransform,
-  executeIsoTask
+  createPausedDataTransform
 } from './utils';
 import { pipeline } from 'stream/promises';
-import {
-  CompareResult,
-  CompareFn,
-  ExecutorTaskDefinition,
-  ReadFn,
-  TransformFn
-} from './types';
+import { CompareFn, ExecutorTaskDefinition, ReadFn } from './types';
 function buildReader(sequentialRead: boolean, readFns: [ReadFn, ReadFn]) {
   const [aReader, bReader] = readFns;
   // Consider changing the sequential read creators to take an array of functions instead
@@ -24,10 +17,7 @@ function buildReader(sequentialRead: boolean, readFns: [ReadFn, ReadFn]) {
     ? createSequentialReadStream(aReader, bReader)
     : createParallelReadStream(aReader, bReader);
 }
-function buildTransform(
-  pausedTransform: boolean,
-  compareFn: CompareFn
-) {
+function buildTransform(pausedTransform: boolean, compareFn: CompareFn) {
   // Consider changing the sequential read creators to take an array of functions instead
 
   return pausedTransform
@@ -42,8 +32,8 @@ function buildOutputStream(outputPath: string) {
 }
 
 /**
- *
- * @param {Object} task
+ * Create a function that will execute a task.
+ * @param {ExecutorTaskDefinition} taskDefinition Object defining functions and settings needed for a task.
  * @returns {Function} A function: () => Promise<any> representing an async task to be executed
  */
 export function executor(
