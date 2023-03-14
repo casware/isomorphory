@@ -43,7 +43,7 @@ export function unstringifyObject(str: string): object {
  * The first array contains strings which are present in `a` and not present in `b`.
  * The second array contains strings present in `b` but not in `a`.
  */
-export function getArrayDiffs([a, b]: [string[], string[], number]): [
+export function getArrayDiffs([a, b]: [string[], string[]]): [
   string[],
   string[],
   number
@@ -70,9 +70,9 @@ export function getArrayDiffs([a, b]: [string[], string[], number]): [
  * This allows for storing the differences in cases of mis-aligned result sets from data stores.
  * The function returns a value in the same format after comparing the chunks.
  * @param {[object[], object[], number]} tuple A 3-tuple containing two arrays and a number.
- * @returns {[object[], object[], number]} A 3-tuple containing two arrays and a number. 
+ * @returns {[object[], object[], number]} A 3-tuple containing two arrays and a number.
  * The first array is made up of the elements that are `missing`: present
- * in the first array but not the second. The second array is made up of the elements that 
+ * in the first array but not the second. The second array is made up of the elements that
  * are `extraneous`: present in the second array but not the first.
  * The third entry in the tuple is the `match` count: the number of elements that are
  * present in both arrays.
@@ -82,8 +82,10 @@ export function defaultCompareFn([
   b,
   previousMatches
 ]: CompareResult): CompareResult {
-  const stringified = [a.map(stringifyObject), b.map(stringifyObject), previousMatches];
-  const [missing, extra, matches] = getArrayDiffs(stringified as [string[], string[], number]);
+  const stringified = [a.map(stringifyObject), b.map(stringifyObject)];
+  const [missing, extra, matches] = getArrayDiffs(
+    stringified as [string[], string[]]
+  );
   return [
     missing.map(unstringifyObject),
     extra.map(unstringifyObject),
