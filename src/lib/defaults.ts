@@ -105,6 +105,6 @@ export function defaultFormatFn([missing, extraneous, matches]: [
     extraneous.map(
       (extra) => JSON.stringify(extra).slice(1, -1) + ',"extraneous"'
     ),
-    `"matches": ${matches}`
+    `"matches":"${matches}"`
   ].flat();
 }
